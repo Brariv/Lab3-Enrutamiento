@@ -1,0 +1,6 @@
+{
+  "_comment": "Mapea cada endpoint (ATM/servidor, NO son routers) a su router gateway. Todos los routers necesitan este archivo para saber hacia que gateway reenviar un mensaje cuyo 'destination' es un endpoint y no un router.",
+  "Brandon": "A",
+  "Javier": "A",
+  "Promerica": "D"
+}

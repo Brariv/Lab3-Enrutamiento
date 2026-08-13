@@ -1,0 +1,12 @@
+{
+  "_comment": "Vecinos directos y costo de enlace por nodo. Placeholder inspirado en el mapa del enunciado: reemplacen por la topologia real que les asignaron.",
+  "A": {"B": 2, "I": 1, "C": 7},
+  "B": {"A": 2, "F": 1},
+  "C": {"A": 7, "D": 5},
+  "D": {"I": 6, "C": 5, "F": 1, "E": 1},
+  "E": {"D": 1, "G": 4},
+  "F": {"B": 1, "D": 1, "H": 4, "G": 3},
+  "G": {"F": 3, "E": 4},
+  "H": {"F": 4},
+  "I": {"A": 1, "D": 6}
+}
