@@ -1,6 +1,5 @@
 {
-  "_comment": "Mapea cada endpoint (ATM/servidor, NO son routers) a su router gateway. Todos los routers necesitan este archivo para saber hacia que gateway reenviar un mensaje cuyo 'destination' es un endpoint y no un router.",
-  "Brandon": "A",
-  "Javier": "A",
-  "Promerica": "D"
+  "_comment": "Mapea cada endpoint (ATM/servidor, NO son routers) a su router gateway. No modifica config/topologia.json (el grafo compartido con las otras parejas); solo dice por cual router de ESE grafo se cuelga cada endpoint local.",
+  "Brandon": "W",
+  "Promerica": "W"
 }
