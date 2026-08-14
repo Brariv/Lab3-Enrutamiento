@@ -6,7 +6,7 @@ import threading
 import time
 from typing import Callable, Optional
 
-from src.net.sockets_utils import control_port, send_line
+from src.net.sockets_utils import send_line
 
 
 class HelloManager:
@@ -52,7 +52,7 @@ class HelloManager:
                 if not addr:
                     continue
                 try:
-                    send_line(addr["ip"], control_port(addr["port"]), json.dumps(hello))
+                    send_line(addr["ip"], addr["port"], json.dumps(hello))
                 except OSError:
                     pass
             time.sleep(self.interval)

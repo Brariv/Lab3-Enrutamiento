@@ -1,16 +1,8 @@
 {
-  "_comment": "Ids de prueba local. Antes de las pruebas con las otras parejas (Tailscale), cambien estos ids por la IP real de cada nodo, segun el protocolo acordado.",
-  "A": {"ip": "127.0.0.1", "port": 5001},
-  "B": {"ip": "127.0.0.1", "port": 5002},
-  "C": {"ip": "127.0.0.1", "port": 5003},
-  "D": {"ip": "127.0.0.1", "port": 5004},
-  "E": {"ip": "127.0.0.1", "port": 5005},
-  "F": {"ip": "127.0.0.1", "port": 5006},
-  "G": {"ip": "127.0.0.1", "port": 5007},
-  "H": {"ip": "127.0.0.1", "port": 5008},
-  "I": {"ip": "127.0.0.1", "port": 5009},
-  "Brandon": {"ip": "127.0.0.1", "port": 5010},
-  "Javier": {"ip": "127.0.0.1", "port": 5011},
-  "Promerica": {"ip": "127.0.0.1", "port": 5012}
-
+  "U": {"ip": "100.89.143.106", "port": 6001},
+  "Z": {"ip": "100.122.161.94", "port": 8080},
+  "V": {"ip": "100.73.120.71", "port": 5051},
+  "W": {"ip": "100.121.247.58", "port": 5003},
+  "X": {"ip": "100.78.190.105", "port": "<pendiente>"},
+  "Y": {"ip": "<pendiente>", "port": "<pendiente>"}
 }

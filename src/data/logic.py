@@ -91,9 +91,16 @@ class ForwardingLayer:
         self.on_local_deliver = on_local_deliver
 
     def start(self) -> None:
-        start_line_server(self.ip, self.port, self._on_frame)
+        """Levanta su propio servidor TCP dedicado solo a datos.
 
-    def _on_frame(self, raw_bits: str, addr) -> None:
+        No lo usa src/node.py: ahi HELLO/LSA y datos comparten un unico
+        puerto por nodo (asi lo esperan las otras parejas), asi que node.py
+        llama directo a `handle_frame()` desde su propio dispatcher. Este
+        metodo queda para poder correr/testear ForwardingLayer aislado.
+        """
+        start_line_server(self.ip, self.port, self.handle_frame)
+
+    def handle_frame(self, raw_bits: str, addr) -> None:
         try:
             data_bits = hamming_decode(raw_bits)
             message = json.loads(bits_to_text(data_bits))

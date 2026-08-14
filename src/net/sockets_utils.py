@@ -1,8 +1,10 @@
 """Helpers de sockets TCP compartidos por routers, ATM y servidor.
 
-Todo se envia como una linea de texto terminada en '\n':
-- Plano de control (HELLO/LSA): la linea es un JSON.
-- Plano de datos: la linea es una cadena de bits ('0'/'1') ya codificada con Hamming(7,4).
+Todo se envia como una linea de texto terminada en '\n', por un UNICO puerto
+por nodo (asi lo esperan las otras 2 parejas de la topologia):
+- Plano de control (HELLO/LSA): la linea es un JSON (empieza con '{').
+- Plano de datos: la linea es una cadena de bits ('0'/'1') ya codificada con
+  Hamming(7,4). src/node.py distingue una de otra mirando el primer caracter.
 """
 from __future__ import annotations
 
@@ -12,11 +14,6 @@ from typing import Callable, Optional
 
 BUFFER_SIZE = 4096
 ENCODING = "utf-8"
-CONTROL_PORT_OFFSET = 1000  # puerto de control = puerto de datos + este offset
-
-
-def control_port(data_port: int) -> int:
-    return data_port + CONTROL_PORT_OFFSET
 
 
 def send_line(ip: str, port: int, text: str, timeout: float = 3.0) -> None:

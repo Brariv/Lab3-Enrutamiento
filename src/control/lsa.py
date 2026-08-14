@@ -12,7 +12,7 @@ import json
 import threading
 from typing import Callable, Optional
 
-from src.net.sockets_utils import control_port, send_line
+from src.net.sockets_utils import send_line
 
 
 class LSAManager:
@@ -82,6 +82,6 @@ class LSAManager:
             if not addr:
                 continue
             try:
-                send_line(addr["ip"], control_port(addr["port"]), json.dumps(lsa))
+                send_line(addr["ip"], addr["port"], json.dumps(lsa))
             except OSError:
                 pass  # vecino caido / no disponible

@@ -17,7 +17,7 @@ from src.control.graph import NetworkGraph
 from src.control.hello import HelloManager
 from src.control.lsa import LSAManager
 from src.data.logic import ForwardingLayer, ForwardingTable, write_routing_table
-from src.net.sockets_utils import control_port, start_line_server
+from src.net.sockets_utils import start_line_server
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -83,20 +83,25 @@ def main() -> None:
         node_id, self_addr["ip"], self_addr["port"], table, addressbook, endpoints, on_local_deliver
     )
 
-    def on_control_message(raw_line: str, _addr) -> None:
+    def on_incoming_line(raw_line: str, _addr) -> None:
+        # Un solo puerto para todo (asi lo esperan las otras parejas): un
+        # frame de datos ya paso por Hamming(7,4), asi que solo tiene '0'/'1';
+        # un mensaje de control (HELLO/LSA) siempre es JSON y empieza con '{'.
+        if raw_line and raw_line[0] in "01":
+            forwarding.handle_frame(raw_line, _addr)
+            return
+
         try:
             message = json.loads(raw_line)
         except ValueError:
-            return  # linea de control corrupta/mal formada: se descarta sin tumbar el hilo del servidor
+            return  # linea corrupta/mal formada: se descarta sin tumbar el hilo del servidor
 
         if message.get("type") == "HELLO":
             hello_manager.handle_hello(message)
         elif message.get("type") == "LSA":
             lsa_manager.handle_incoming(message)
 
-    control_port_value = control_port(self_addr["port"])
-    start_line_server(self_addr["ip"], control_port_value, on_control_message)
-    forwarding.start()
+    start_line_server(self_addr["ip"], self_addr["port"], on_incoming_line)
     hello_manager.start()
 
     def _lsa_refresh_loop() -> None:
@@ -116,8 +121,7 @@ def main() -> None:
     lsa_manager.flood_own_lsa()
 
     print(
-        f"[{node_id}] escuchando control en {self_addr['ip']}:{control_port_value}, "
-        f"datos en {self_addr['ip']}:{self_addr['port']}",
+        f"[{node_id}] escuchando en {self_addr['ip']}:{self_addr['port']} (control + datos)",
         flush=True,
     )
 
