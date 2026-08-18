@@ -40,11 +40,24 @@ def main() -> None:
     def on_frame(raw_bits: str, _addr) -> None:
         data_bits = hamming_decode(raw_bits)
         message = json.loads(bits_to_text(data_bits))
-        print(f"[{args.self_id}] recibido: {message}")
+        print(f"[{args.self_id}] recibido: {message}", flush=True)
 
         response = handle_incoming(message)
         encoded = hamming_encode(text_to_bits(json.dumps(response)))
-        send_line(gateway["ip"], gateway["port"], encoded)
+        try:
+            send_line(gateway["ip"], gateway["port"], encoded)
+        except OSError as exc:
+            print(
+                f"[{args.self_id}] NO se pudo mandar la respuesta a su gateway "
+                f"'{args.gateway_id}' ({gateway['ip']}:{gateway['port']}): {exc}",
+                flush=True,
+            )
+            return
+        print(
+            f"[{args.self_id}] respuesta enviada a '{response.get('destination')}' "
+            f"via {args.gateway_id} ({gateway['ip']}:{gateway['port']})",
+            flush=True,
+        )
 
     start_line_server(self_addr["ip"], self_addr["port"], on_frame)
     print(f"[{args.self_id}] escuchando en {self_addr['ip']}:{self_addr['port']}")

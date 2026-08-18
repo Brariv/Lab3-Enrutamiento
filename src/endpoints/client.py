@@ -26,7 +26,7 @@ from src.hamming.encode import encode as hamming_encode
 from src.net.sockets_utils import send_line, start_line_server
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RESPUESTA_TIMEOUT = 5.0
+RESPUESTA_TIMEOUT = 50.0
 
 
 def load_addressbook() -> dict:

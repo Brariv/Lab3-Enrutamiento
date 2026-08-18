@@ -80,8 +80,17 @@ def main() -> None:
         print(f"[{node_id}] mensaje entregado localmente a {message.get('destination')}: {message}", flush=True)
 
     forwarding = ForwardingLayer(
-        node_id, self_addr["ip"], self_addr["port"], table, addressbook, endpoints, on_local_deliver
+        node_id,
+        self_addr["ip"],
+        self_addr["port"],
+        table,
+        addressbook,
+        endpoints,
+        on_local_deliver,
+        # Se relee en cada frame: cambiar endpoints.json ya no obliga a reiniciar el nodo.
+        endpoints_path=os.path.join(BASE_DIR, "config", "endpoints.json"),
     )
+    print(f"[{node_id}] endpoints locales: {endpoints}", flush=True)
 
     def on_incoming_line(raw_line: str, _addr) -> None:
         # Un solo puerto para todo (asi lo esperan las otras parejas): un
@@ -94,12 +103,16 @@ def main() -> None:
         try:
             message = json.loads(raw_line)
         except ValueError:
+            print(f"[{node_id}] linea ignorada (ni bits ni JSON): {raw_line[:80]!r}", flush=True)
             return  # linea corrupta/mal formada: se descarta sin tumbar el hilo del servidor
 
-        if message.get("type") == "HELLO":
+        tipo = message.get("type")
+        if tipo == "HELLO":
             hello_manager.handle_hello(message)
-        elif message.get("type") == "LSA":
+        elif tipo == "LSA":
             lsa_manager.handle_incoming(message)
+        else:
+            print(f"[{node_id}] mensaje de control desconocido (type={tipo!r}): {raw_line[:120]}", flush=True)
 
     start_line_server(self_addr["ip"], self_addr["port"], on_incoming_line)
     hello_manager.start()

@@ -1,5 +1,7 @@
 {
-  "_comment": "Mapea cada endpoint (ATM/servidor, NO son routers) a su router gateway. No modifica config/topologia.json (el grafo compartido con las otras parejas); solo dice por cual router de ESE grafo se cuelga cada endpoint local.",
-  "Brandon": "W",
-  "Promerica": "W"
+  "_comment": "Mapea cada endpoint (ATM/servidor, NO son routers) a su router gateway. No modifica config/topologia.json (el grafo compartido con las otras parejas); solo dice por cual router de ESE grafo se cuelga cada endpoint local. IMPORTANTE: el id de cada endpoint debe escribirse EXACTAMENTE igual que en config/nodos.json, y el gateway debe ser el mismo router con el que se arranca ese endpoint (python -m src.endpoints.server Promerica V -> 'Promerica': 'V').",
+  "Brandon_Rivera": "V",
+  "Promerica": "W",
+  "Javier_Lopez": "U",
+  "ATM1": "U"
 }

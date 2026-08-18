@@ -47,6 +47,10 @@ class ForwardingTable:
         with self._lock:
             return self._table.get(destino)
 
+    def destinations(self) -> list[str]:
+        with self._lock:
+            return list(self._table)
+
 
 def write_routing_table(csv_path: str, routes: dict, addressbook: dict) -> None:
     """routes: {destino: (costo, siguiente_salto)} -> escribe nodo_tabla_enrutamiento.csv"""
@@ -81,6 +85,7 @@ class ForwardingLayer:
         addressbook: dict,
         endpoints: Optional[dict] = None,
         on_local_deliver: Optional[Callable[[dict], None]] = None,
+        endpoints_path: Optional[str] = None,
     ):
         self.self_id = self_id
         self.ip = ip
@@ -89,6 +94,7 @@ class ForwardingLayer:
         self.addressbook = addressbook
         self.endpoints = endpoints or {}
         self.on_local_deliver = on_local_deliver
+        self.endpoints_path = endpoints_path  # si se da, se relee en cada frame (ver reload_endpoints)
 
     def start(self) -> None:
         """Levanta su propio servidor TCP dedicado solo a datos.
@@ -100,14 +106,35 @@ class ForwardingLayer:
         """
         start_line_server(self.ip, self.port, self.handle_frame)
 
+    def reload_endpoints(self) -> None:
+        """Relee config/endpoints.json si se paso `endpoints_path`.
+
+        Sin esto, corregir/agregar un endpoint obliga a reiniciar el router:
+        el mapa se leia una sola vez al arrancar y los frames hacia el
+        endpoint viejo se iban al gateway equivocado (y se perdian en
+        silencio).
+        """
+        if not self.endpoints_path:
+            return
+        try:
+            with open(self.endpoints_path) as f:
+                self.endpoints = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
+        except (OSError, ValueError):
+            pass  # archivo borrado o a medio escribir: me quedo con el mapa anterior
+
     def handle_frame(self, raw_bits: str, addr) -> None:
         try:
             data_bits = hamming_decode(raw_bits)
             message = json.loads(bits_to_text(data_bits))
         except (ValueError, UnicodeDecodeError):
+            self._log("frame descartado: no se pudo decodificar (Hamming/JSON)")
             return  # frame corrupto mas alla de lo que Hamming(7,4) puede corregir
 
+        self.reload_endpoints()
         self.forward(message)
+
+    def _log(self, texto: str) -> None:
+        print(f"[{self.self_id}] {texto}", flush=True)
 
     def forward(self, message: dict) -> None:
         destino = message.get("destination")
@@ -123,29 +150,54 @@ class ForwardingLayer:
         target = gateway_id or destino
 
         if target == self.self_id:
+            # Llegue al router correcto. Si "destination" venia reescrito a mi
+            # propio id (porque un router de mi equipo, en un salto anterior,
+            # tuvo que disfrazarlo de id de router para que los routers ajenos
+            # en el camino lo pudieran enrutar sin conocer el endpoint privado),
+            # "_endpoint" trae el destino real: lo resuelvo de nuevo, ahora con
+            # MI PROPIO config/endpoints.json.
+            original = message.get("_endpoint")
+            if original and original not in (self.self_id, destino):
+                self.forward({**message, "destination": original})
+                return
             if self.on_local_deliver:
                 self.on_local_deliver(message)
             return
 
+        if target != destino:
+            # "destino" es un endpoint (no un router) cuyo gateway no soy yo.
+            # Los routers ajenos en medio del camino no conocen nombres
+            # privados como este (solo enrutan por id de router), asi que el
+            # mensaje tiene que viajar disfrazado de "target" (un router de
+            # verdad); me guardo el destino real en "_endpoint" para
+            # recuperarlo cuando llegue a ese router.
+            message = {**message, "destination": target, "_endpoint": destino}
+
         route = self.table.lookup(target)
         if not route:
+            self._log(
+                f"DESCARTADO: no hay ruta hacia '{target}'"
+                f"{f' (destino real {destino!r})' if target != destino else ''}. "
+                f"Destinos conocidos: {sorted(self.table.destinations())}"
+            )
             return  # sin ruta conocida todavia (o el gateway aun no aparece en el grafo)
 
+        self._log(f"reenviando hacia '{target}' via {route['siguiente_salto']} ({route['ip']}:{route['puerto']})")
         self._send(message, route["ip"], route["puerto"])
 
     def _deliver_local(self, message: dict, destino: str) -> None:
         addr = self.addressbook.get(destino)
         if not addr:
+            self._log(f"DESCARTADO: '{destino}' es endpoint mio pero no tiene ip/puerto en config/nodos.json")
             return  # el endpoint no tiene ip/puerto registrado en nodos.json
         self._send(message, addr["ip"], addr["port"])
         if self.on_local_deliver:
             self.on_local_deliver(message)
 
-    @staticmethod
-    def _send(message: dict, ip: str, port: int) -> None:
+    def _send(self, message: dict, ip: str, port: int) -> None:
         bits = text_to_bits(json.dumps(message))
         encoded = hamming_encode(bits)
         try:
             send_line(ip, port, encoded)
-        except OSError:
-            pass  # destino/siguiente salto no disponible
+        except OSError as exc:
+            self._log(f"DESCARTADO: no se pudo entregar en {ip}:{port} ({exc}). ¿Ese proceso esta corriendo?")
